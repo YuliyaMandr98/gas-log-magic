@@ -18,47 +18,33 @@ interface Trip {
   date: string;
 }
 
-const CONSUMPTION_RATES = {
-  empty: 25.5, // л/100км для пустого
-  loaded: 31.97, // л/100км для груженого (старое значение)
-  loadedNew: 27.27, // л/100км для груженого (новое значение)
-};
-
-const COEFFICIENT = 0.35; // коэффициент для груженых поездок
+const BASE_CONSUMPTION = 25.5; // л/100км для пустого
 
 export const FuelCalculator = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [distance, setDistance] = useState('');
   const [weight, setWeight] = useState('');
   const [loadType, setLoadType] = useState<'empty' | 'loaded'>('empty');
-  const [consumptionRate, setConsumptionRate] = useState('old');
+  const [coefficient, setCoefficient] = useState('0.35');
   const [actualFuel, setActualFuel] = useState('');
   const { toast } = useToast();
 
   const calculateExpectedFuel = () => {
     const dist = parseFloat(distance);
     const wt = parseFloat(weight) || 0;
+    const coeff = parseFloat(coefficient) || 0;
     
     if (!dist || dist <= 0) return 0;
 
-    let baseConsumption = 0;
+    let consumptionPer100km = BASE_CONSUMPTION;
     
-    if (loadType === 'empty') {
-      baseConsumption = CONSUMPTION_RATES.empty;
-    } else {
-      baseConsumption = consumptionRate === 'old' 
-        ? CONSUMPTION_RATES.loaded 
-        : CONSUMPTION_RATES.loadedNew;
+    // Для груженой поездки добавляем к базовому расходу вес × коэффициент
+    if (loadType === 'loaded' && wt > 0) {
+      const additionalConsumption = Math.round((wt * coeff) * 100) / 100; // округляем до сотых
+      consumptionPer100km = BASE_CONSUMPTION + additionalConsumption;
     }
 
-    const baseFuel = (dist * baseConsumption) / 100;
-    
-    // Применяем коэффициент для груженых поездок
-    if (loadType === 'loaded') {
-      return baseFuel * COEFFICIENT;
-    }
-    
-    return baseFuel;
+    return (dist * consumptionPer100km) / 100;
   };
 
   const addTrip = () => {
@@ -161,20 +147,17 @@ export const FuelCalculator = () => {
                 </Select>
               </div>
 
-              {loadType === 'loaded' && (
-                <div className="space-y-2">
-                  <Label htmlFor="consumptionRate">Норма расхода</Label>
-                  <Select value={consumptionRate} onValueChange={setConsumptionRate}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="old">31.97 л/100км (старая)</SelectItem>
-                      <SelectItem value="new">27.27 л/100км (новая)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="coefficient">Коэффициент</Label>
+                <Input
+                  id="coefficient"
+                  type="number"
+                  step="0.01"
+                  placeholder="Введите коэффициент"
+                  value={coefficient}
+                  onChange={(e) => setCoefficient(e.target.value)}
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="actualFuel">Фактический расход (л)</Label>
@@ -197,8 +180,10 @@ export const FuelCalculator = () => {
                     {calculateExpectedFuel().toFixed(2)} л
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    {loadType === 'empty' ? `${CONSUMPTION_RATES.empty} л/100км` : 
-                     `${consumptionRate === 'old' ? CONSUMPTION_RATES.loaded : CONSUMPTION_RATES.loadedNew} л/100км × ${COEFFICIENT}`}
+                    {loadType === 'empty' 
+                      ? `${BASE_CONSUMPTION} л/100км` 
+                      : `${BASE_CONSUMPTION} + ${parseFloat(weight) || 0} × ${coefficient} = ${(BASE_CONSUMPTION + Math.round(((parseFloat(weight) || 0) * (parseFloat(coefficient) || 0)) * 100) / 100).toFixed(2)} л/100км`
+                    }
                   </div>
                 </div>
               )}
