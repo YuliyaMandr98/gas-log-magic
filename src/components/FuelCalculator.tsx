@@ -38,9 +38,9 @@ export const FuelCalculator = () => {
 
     let consumptionPer100km = BASE_CONSUMPTION;
     
-    // Для груженой поездки добавляем к базовому расходу вес × коэффициент
+    // Для груженой поездки добавляем к базовому расходу (вес × коэффициент ÷ 1000)
     if (loadType === 'loaded' && wt > 0) {
-      const additionalConsumption = Math.round((wt * coeff) * 100) / 100; // округляем до сотых
+      const additionalConsumption = Math.round((wt * coeff / 1000) * 100) / 100; // округляем до сотых
       consumptionPer100km = BASE_CONSUMPTION + additionalConsumption;
     }
 
@@ -182,7 +182,7 @@ export const FuelCalculator = () => {
                   <div className="text-sm text-muted-foreground mt-1">
                     {loadType === 'empty' 
                       ? `${BASE_CONSUMPTION} л/100км` 
-                      : `${BASE_CONSUMPTION} + (${parseFloat(weight) || 0} × ${coefficient}) = ${(BASE_CONSUMPTION + Math.round(((parseFloat(weight) || 0) * (parseFloat(coefficient) || 0)) * 100) / 100).toFixed(2)} л/100км`
+                      : `${BASE_CONSUMPTION} + (${parseFloat(weight) || 0} × ${coefficient} ÷ 1000) = ${(BASE_CONSUMPTION + Math.round(((parseFloat(weight) || 0) * (parseFloat(coefficient) || 0) / 1000) * 100) / 100).toFixed(2)} л/100км`
                     }
                   </div>
                 </div>
