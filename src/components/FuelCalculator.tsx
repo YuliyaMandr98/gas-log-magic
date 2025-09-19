@@ -182,7 +182,7 @@ export const FuelCalculator = () => {
                   <div className="text-sm text-muted-foreground mt-1">
                     {loadType === 'empty' 
                       ? `${BASE_CONSUMPTION} л/100км` 
-                      : `${BASE_CONSUMPTION} + ${parseFloat(weight) || 0} × ${coefficient} = ${(BASE_CONSUMPTION + Math.round(((parseFloat(weight) || 0) * (parseFloat(coefficient) || 0)) * 100) / 100).toFixed(2)} л/100км`
+                      : `${BASE_CONSUMPTION} + (${parseFloat(weight) || 0} × ${coefficient}) = ${(BASE_CONSUMPTION + Math.round(((parseFloat(weight) || 0) * (parseFloat(coefficient) || 0)) * 100) / 100).toFixed(2)} л/100км`
                     }
                   </div>
                 </div>
