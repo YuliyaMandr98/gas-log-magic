@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: [
+      'gas-log-magic.onrender.com',
+      'gas-log-magic.railway.app'
+    ]
   },
   plugins: [react()],
   resolve: {
