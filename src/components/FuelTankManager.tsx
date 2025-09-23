@@ -1,14 +1,7 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Fuel, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState, useEffect, useCallback } from 'react';
+import { recalculateAllTanks } from '@/lib/recalculateAllTanks';
 
+// Типы для транзакций и статуса баков
 interface FuelTransaction {
   id: string;
   type: 'refuel' | 'consumption';
@@ -21,28 +14,130 @@ interface FuelTransaction {
 interface TankStatus {
   main: number;
   ref: number;
-  mainCapacity: number;
-  refCapacity: number;
 }
 
-export const FuelTankManager = () => {
-  const [tankStatus, setTankStatus] = useState<TankStatus>({
-    main: 609, // Начальное значение из документа
-    ref: 235,  // Начальное значение из документа
-    mainCapacity: 1000,
-    refCapacity: 300,
-  });
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Fuel, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+// Функция для форматирования даты в русском формате
+const formatRussianDate = (date: Date) => {
+  const months = [
+    'янв', 'фев', 'мар', 'апр', 'май', 'июн',
+    'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
+  ];
   
-  const [transactions, setTransactions] = useState<FuelTransaction[]>([]);
-  const [transactionType, setTransactionType] = useState<'refuel' | 'consumption'>('refuel');
-  const [amount, setAmount] = useState('');
-  const [tankType, setTankType] = useState<'main' | 'ref'>('main');
-  const [description, setDescription] = useState('');
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  
+  return `${day}-${month}-${year} ${hours}:${minutes}`;
+};
+
+export const FuelTankManager = () => {
+
   const { toast } = useToast();
+  // --- capacities ---
+  const MAIN_CAPACITY = 1000;
+  const REF_CAPACITY = 300;
+  // --- localStorage keys ---
+  const LS_TANK_STATUS = 'fuelTankManager_status';
+  const LS_TRANSACTIONS = 'fuelTankManager_transactions';
+  const LS_FORM = 'fuelTankManager_form';
+
+  const [tankStatus, setTankStatus] = useState<TankStatus>(() => {
+    const saved = localStorage.getItem(LS_TANK_STATUS);
+    return saved ? JSON.parse(saved) : {
+      main: 0,
+      ref: 0,
+    };
+  });
+  const [transactions, setTransactions] = useState<FuelTransaction[]>(() => {
+    const saved = localStorage.getItem(LS_TRANSACTIONS);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [transactionType, setTransactionType] = useState<'refuel' | 'consumption'>(() => {
+    const saved = localStorage.getItem(LS_FORM);
+    return saved ? JSON.parse(saved).transactionType || 'refuel' : 'refuel';
+  });
+  const [amount, setAmount] = useState(() => {
+    const saved = localStorage.getItem(LS_FORM);
+    return saved ? JSON.parse(saved).amount || '' : '';
+  });
+  const [tankType, setTankType] = useState<'main' | 'ref'>(() => {
+    const saved = localStorage.getItem(LS_FORM);
+    return saved ? JSON.parse(saved).tankType || 'main' : 'main';
+  });
+  const [description, setDescription] = useState(() => {
+    const saved = localStorage.getItem(LS_FORM);
+    return saved ? JSON.parse(saved).description || '' : '';
+  });
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editTx, setEditTx] = useState<FuelTransaction | null>(null);
+
+
+  // --- синхронизация tankStatus с localStorage после любого изменения ---
+  const syncTankStatus = () => {
+    const raw = localStorage.getItem(LS_TANK_STATUS);
+    if (raw) setTankStatus(JSON.parse(raw));
+  };
+
+  const startEdit = (tx: FuelTransaction) => {
+    setEditId(tx.id);
+    setEditTx({ ...tx });
+  };
+
+  const cancelEdit = () => {
+    setEditId(null);
+    setEditTx(null);
+  };
+
+  const saveEdit = () => {
+    if (!editTx) return;
+    const newTxs = transactions.map(tx => tx.id === editTx.id ? editTx : tx);
+  setTransactions(newTxs);
+    setEditId(null);
+    setEditTx(null);
+    toast({ title: 'Операция обновлена' });
+  };
+
+  const deleteTx = (id: string) => {
+    const newTxs = transactions.filter(t => t.id !== id);
+  setTransactions(newTxs);
+    toast({ title: 'Операция удалена' });
+  };
+
+  // --- save tankStatus to localStorage ---
+  React.useEffect(() => {
+    localStorage.setItem(LS_TANK_STATUS, JSON.stringify(tankStatus));
+  }, [tankStatus]);
+
+  // --- save transactions to localStorage и пересчёт бака ---
+  React.useEffect(() => {
+    localStorage.setItem(LS_TRANSACTIONS, JSON.stringify(transactions));
+    recalculateAllTanks();
+    setTimeout(syncTankStatus, 0);
+  }, [transactions]);
+
+  // --- save form to localStorage ---
+  React.useEffect(() => {
+    localStorage.setItem(
+      LS_FORM,
+      JSON.stringify({ transactionType, amount, tankType, description })
+    );
+  }, [transactionType, amount, tankType, description]);
 
   const addTransaction = () => {
     const amountValue = parseFloat(amount);
-    
     if (!amountValue || amountValue <= 0) {
       toast({
         title: "Ошибка",
@@ -51,7 +146,6 @@ export const FuelTankManager = () => {
       });
       return;
     }
-
     const newTransaction: FuelTransaction = {
       id: Date.now().toString(),
       type: transactionType,
@@ -60,42 +154,20 @@ export const FuelTankManager = () => {
       date: new Date().toLocaleString('ru-RU'),
       description: description.trim() || undefined,
     };
-
-    // Обновляем уровень топлива в баках
-    setTankStatus(prev => {
-      const newStatus = { ...prev };
-      
-      if (transactionType === 'refuel') {
-        if (tankType === 'main') {
-          newStatus.main = Math.min(prev.main + amountValue, prev.mainCapacity);
-        } else {
-          newStatus.ref = Math.min(prev.ref + amountValue, prev.refCapacity);
-        }
-      } else {
-        if (tankType === 'main') {
-          newStatus.main = Math.max(prev.main - amountValue, 0);
-        } else {
-          newStatus.ref = Math.max(prev.ref - amountValue, 0);
-        }
-      }
-      
-      return newStatus;
-    });
-
-    setTransactions(prev => [newTransaction, ...prev]);
-    
-    // Очищаем форму
+    const newTxs = [newTransaction, ...transactions];
+    setTransactions(newTxs);
+    recalculateAllTanks();
+    setTimeout(syncTankStatus, 0);
     setAmount('');
     setDescription('');
-    
     toast({
       title: transactionType === 'refuel' ? "Заправка добавлена" : "Расход учтен",
       description: `${tankType === 'main' ? 'Основной бак' : 'Бак рефрижератора'}: ${transactionType === 'refuel' ? '+' : '-'}${amountValue} л`,
     });
   };
 
-  const getMainTankPercentage = () => (tankStatus.main / tankStatus.mainCapacity) * 100;
-  const getRefTankPercentage = () => (tankStatus.ref / tankStatus.refCapacity) * 100;
+  const getMainTankPercentage = () => (tankStatus.main / MAIN_CAPACITY) * 100;
+  const getRefTankPercentage = () => (tankStatus.ref / REF_CAPACITY) * 100;
   
   const getTankStatusColor = (percentage: number) => {
     if (percentage <= 20) return 'text-destructive';
@@ -131,8 +203,6 @@ export const FuelTankManager = () => {
               <Progress value={getMainTankPercentage()} className="h-3" />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>0 л</span>
-                <span>{getMainTankPercentage().toFixed(1)}%</span>
-                <span>{tankStatus.mainCapacity} л</span>
               </div>
             </div>
             
@@ -163,8 +233,6 @@ export const FuelTankManager = () => {
               <Progress value={getRefTankPercentage()} className="h-3" />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>0 л</span>
-                <span>{getRefTankPercentage().toFixed(1)}%</span>
-                <span>{tankStatus.refCapacity} л</span>
               </div>
             </div>
             
@@ -273,32 +341,72 @@ export const FuelTankManager = () => {
                 </thead>
                 <tbody>
                   {transactions.map((transaction) => (
-                    <tr key={transaction.id} className="border-b">
-                      <td className="py-2">{transaction.date}</td>
-                      <td className="py-2">
-                        <Badge variant={transaction.type === 'refuel' ? 'success' : 'secondary'}>
-                          <div className="flex items-center gap-1">
-                            {transaction.type === 'refuel' ? (
-                              <TrendingUp className="w-3 h-3" />
-                            ) : (
-                              <TrendingDown className="w-3 h-3" />
-                            )}
-                            {transaction.type === 'refuel' ? 'Заправка' : 'Расход'}
-                          </div>
-                        </Badge>
-                      </td>
-                      <td className="py-2">
-                        {transaction.tankType === 'main' ? 'Основной' : 'Рефрижератор'}
-                      </td>
-                      <td className="py-2 font-medium">
-                        <span className={transaction.type === 'refuel' ? 'text-success' : 'text-warning'}>
-                          {transaction.type === 'refuel' ? '+' : '-'}{transaction.amount} л
-                        </span>
-                      </td>
-                      <td className="py-2 text-muted-foreground">
-                        {transaction.description || '-'}
-                      </td>
-                    </tr>
+                    editId === transaction.id && editTx ? (
+                      <tr key={transaction.id} className="border-b bg-muted/40">
+                        <td className="py-2">{transaction.date}</td>
+                        <td className="py-2">
+                          <Select value={editTx.type} onValueChange={v => setEditTx(e => e ? { ...e, type: v as any } : e)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="refuel">Заправка</SelectItem>
+                              <SelectItem value="consumption">Расход</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="py-2">
+                          <Select value={editTx.tankType} onValueChange={v => setEditTx(e => e ? { ...e, tankType: v as any } : e)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="main">Основной</SelectItem>
+                              <SelectItem value="ref">Рефрижератор</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="py-2 font-medium">
+                          <Input type="number" value={editTx.amount}
+                            onChange={e => setEditTx(et => et ? { ...et, amount: parseFloat(e.target.value) || 0 } : et)} />
+                        </td>
+                        <td className="py-2">
+                          <Input value={editTx.description ?? ''}
+                            onChange={e => setEditTx(et => et ? { ...et, description: e.target.value } : et)} />
+                        </td>
+                        <td className="py-2 flex gap-2">
+                          <Button size="sm" variant="success" onClick={saveEdit}>Сохранить</Button>
+                          <Button size="sm" variant="outline" onClick={cancelEdit}>Отмена</Button>
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr key={transaction.id} className="border-b">
+                        <td className="py-2">{transaction.date}</td>
+                        <td className="py-2">
+                          <Badge variant={transaction.type === 'refuel' ? 'success' : 'secondary'}>
+                            <div className="flex items-center gap-1">
+                              {transaction.type === 'refuel' ? (
+                                <TrendingUp className="w-3 h-3" />
+                              ) : (
+                                <TrendingDown className="w-3 h-3" />
+                              )}
+                              {transaction.type === 'refuel' ? 'Заправка' : 'Расход'}
+                            </div>
+                          </Badge>
+                        </td>
+                        <td className="py-2">
+                          {transaction.tankType === 'main' ? 'Основной' : 'Рефрижератор'}
+                        </td>
+                        <td className="py-2 font-medium">
+                          <span className={transaction.type === 'refuel' ? 'text-success' : 'text-warning'}>
+                            {transaction.type === 'refuel' ? '+' : '-'}{transaction.amount} л
+                          </span>
+                        </td>
+                        <td className="py-2 text-muted-foreground">
+                          {transaction.description || '-'}
+                        </td>
+                        <td className="py-2 flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => startEdit(transaction)}>Редактировать</Button>
+                          <Button size="sm" variant="destructive" onClick={() => deleteTx(transaction.id)}>Удалить</Button>
+                        </td>
+                      </tr>
+                    )
                   ))}
                 </tbody>
               </table>
