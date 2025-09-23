@@ -10,13 +10,20 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     allowedHosts: [
       'gas-log-magic.onrender.com',
-      'gas-log-magic.railway.app' // также добавьте railway домен
+      'gas-log-magic.railway.app'
     ]
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    mode === "development" && componentTagger()
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    target: 'es2015',
+    minify: 'terser'
+  }
 }));
