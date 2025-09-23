@@ -33,13 +33,13 @@ const formatRussianDate = (date: Date) => {
     'янв', 'фев', 'мар', 'апр', 'май', 'июн',
     'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
   ];
-  
+
   const day = date.getDate().toString().padStart(2, '0');
   const month = months[date.getMonth()];
   const year = date.getFullYear();
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
-  
+
   return `${day}-${month}-${year} ${hours}:${minutes}`;
 };
 
@@ -104,7 +104,7 @@ export const FuelTankManager = () => {
   const saveEdit = () => {
     if (!editTx) return;
     const newTxs = transactions.map(tx => tx.id === editTx.id ? editTx : tx);
-  setTransactions(newTxs);
+    setTransactions(newTxs);
     setEditId(null);
     setEditTx(null);
     toast({ title: 'Операция обновлена' });
@@ -112,7 +112,7 @@ export const FuelTankManager = () => {
 
   const deleteTx = (id: string) => {
     const newTxs = transactions.filter(t => t.id !== id);
-  setTransactions(newTxs);
+    setTransactions(newTxs);
     toast({ title: 'Операция удалена' });
   };
 
@@ -168,7 +168,7 @@ export const FuelTankManager = () => {
 
   const getMainTankPercentage = () => (tankStatus.main / MAIN_CAPACITY) * 100;
   const getRefTankPercentage = () => (tankStatus.ref / REF_CAPACITY) * 100;
-  
+
   const getTankStatusColor = (percentage: number) => {
     if (percentage <= 20) return 'text-destructive';
     if (percentage <= 40) return 'text-warning';
@@ -205,7 +205,7 @@ export const FuelTankManager = () => {
                 <span>0 л</span>
               </div>
             </div>
-            
+
             {getMainTankPercentage() <= 20 && (
               <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg">
                 <AlertTriangle className="w-4 h-4 text-destructive" />
@@ -235,7 +235,7 @@ export const FuelTankManager = () => {
                 <span>0 л</span>
               </div>
             </div>
-            
+
             {getRefTankPercentage() <= 20 && (
               <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg">
                 <AlertTriangle className="w-4 h-4 text-destructive" />

@@ -7,7 +7,7 @@ function addToRefTank(amount: number) {
     const status = JSON.parse(raw);
     status.ref = (status.ref || 0) + amount;
     localStorage.setItem(LS_TANK_STATUS, JSON.stringify(status));
-  } catch {}
+  } catch { }
 }
 import React, { useState } from 'react';
 // --- Функция для синхронизации с баком рефрижератора ---
@@ -19,7 +19,7 @@ function subtractFromRefTank(amount: number) {
     const status = JSON.parse(raw);
     status.ref = (status.ref || 0) - amount; // разрешаем минус
     localStorage.setItem(LS_TANK_STATUS, JSON.stringify(status));
-  } catch {}
+  } catch { }
 }
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,13 +37,13 @@ const formatRussianDate = (dateString: string) => {
     'янв', 'фев', 'мар', 'апр', 'май', 'июн',
     'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
   ];
-  
+
   const day = date.getDate().toString().padStart(2, '0');
   const month = months[date.getMonth()];
   const year = date.getFullYear();
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
-  
+
   return `${day}-${month}-${year} ${hours}:${minutes}`;
 };
 
@@ -225,8 +225,8 @@ export const RefrigeratorTracker = () => {
       fuelConsumed: fuel,
       status: 'completed',
     };
-  setSessions(prev => [completedSession, ...prev]);
-  setTimeout(recalculateAllTanks, 0);
+    setSessions(prev => [completedSession, ...prev]);
+    setTimeout(recalculateAllTanks, 0);
     setCurrentSession(null);
     setIsRunning(false);
     // Очищаем форму
@@ -259,8 +259,8 @@ export const RefrigeratorTracker = () => {
       fuelConsumed: fuel,
       status: 'completed',
     };
-  setSessions(prev => [newSession, ...prev]);
-  setTimeout(recalculateAllTanks, 0);
+    setSessions(prev => [newSession, ...prev]);
+    setTimeout(recalculateAllTanks, 0);
     // Очищаем форму
     setStartTime('');
     setEndTime('');

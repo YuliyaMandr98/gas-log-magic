@@ -116,7 +116,7 @@ const Report = () => {
             try {
                 const parsed = JSON.parse(initialFuelData);
                 setInitialFuel(parsed);
-            } catch {}
+            } catch { }
         }
     }, []);
 
@@ -296,7 +296,7 @@ const Report = () => {
                                         }
                                         if (t.loadType === 'loaded') {
                                             // Ищем операцию загрузки для этой поездки
-                                            const loadOperation = viewReport.cargoOperations?.find((op: any) => 
+                                            const loadOperation = viewReport.cargoOperations?.find((op: any) =>
                                                 op.type === 'load' && op.date === t.date
                                             );
                                             const weight = loadOperation?.weight || t.weight || 0;
