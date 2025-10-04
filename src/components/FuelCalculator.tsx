@@ -39,11 +39,11 @@ const formatRussianDate = (date: Date) => {
     'янв', 'фев', 'мар', 'апр', 'май', 'июн',
     'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
   ];
-  
+
   const day = date.getDate().toString().padStart(2, '0');
   const month = months[date.getMonth()];
   const year = date.getFullYear();
-  
+
   return `${day}-${month}-${year}`;
 };
 
@@ -71,7 +71,7 @@ interface CargoState {
   operations: LoadOperation[];
 }
 
-const BASE_CONSUMPTION = 25.5; // л/100км для пустого
+const BASE_CONSUMPTION = 25; // л/100км для пустого!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 const HEAD_CONSUMPTION = 23; // л/100км для головы (без прицепа)
 
 
@@ -122,7 +122,7 @@ export const FuelCalculator = () => {
     if (saved) {
       return JSON.parse(saved);
     }
-    
+
     // Если нет сохраненных данных, проверяем начальный вес
     const initialFuel = localStorage.getItem('initialFuelState');
     if (initialFuel) {
@@ -130,9 +130,9 @@ export const FuelCalculator = () => {
         const parsed = JSON.parse(initialFuel);
         const initialWeight = parsed.cargoWeight || 0;
         return { currentWeight: initialWeight, operations: [] };
-      } catch {}
+      } catch { }
     }
-    
+
     return { currentWeight: 0, operations: [] };
   });
   const [loadDate, setLoadDate] = useState('');
@@ -218,17 +218,17 @@ export const FuelCalculator = () => {
       setWeight('');
     }
   }, [cargoState]);
-  
+
   // --- обновление веса груза при изменении начальных данных ---
   React.useEffect(() => {
     const handleStorageChange = () => {
       const savedCargo = localStorage.getItem('fuelCalc_cargo');
-      
+
       if (savedCargo) {
         try {
           const parsed = JSON.parse(savedCargo);
           setCargoState(parsed);
-        } catch {}
+        } catch { }
       } else {
         const initialFuel = localStorage.getItem('initialFuelState');
         if (initialFuel) {
@@ -236,14 +236,14 @@ export const FuelCalculator = () => {
             const parsed = JSON.parse(initialFuel);
             const initialWeight = parsed.cargoWeight || 0;
             setCargoState({ currentWeight: initialWeight, operations: [] });
-          } catch {}
+          } catch { }
         }
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     handleStorageChange();
-    
+
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
@@ -332,7 +332,7 @@ export const FuelCalculator = () => {
   const addLoadOperation = () => {
     const weightNum = parseFloat(loadWeight);
     if (!loadDate || !weightNum || weightNum <= 0) return;
-    
+
     const newOperation: LoadOperation = {
       id: Date.now().toString(),
       type: 'load',
@@ -340,12 +340,12 @@ export const FuelCalculator = () => {
       weight: weightNum,
       description: loadDescription.trim() || undefined
     };
-    
+
     setCargoState(prev => ({
       currentWeight: prev.currentWeight + weightNum,
       operations: [newOperation, ...prev.operations]
     }));
-    
+
     setLoadDate('');
     setLoadWeight('');
     setLoadDescription('');
@@ -356,19 +356,19 @@ export const FuelCalculator = () => {
       alert('Укажите дату выгрузки');
       return;
     }
-    
+
     const weightNum = unloadType === 'all' ? cargoState.currentWeight : parseFloat(unloadWeight);
-    
+
     if (cargoState.currentWeight === 0) {
       alert('Нет груза для выгрузки');
       return;
     }
-    
+
     if (unloadType === 'partial' && (!weightNum || weightNum <= 0 || weightNum > cargoState.currentWeight)) {
       alert('Некорректный вес для выгрузки');
       return;
     }
-    
+
     const newOperation: LoadOperation = {
       id: Date.now().toString(),
       type: 'unload',
@@ -376,12 +376,12 @@ export const FuelCalculator = () => {
       weight: weightNum,
       description: loadDescription.trim() || undefined
     };
-    
+
     setCargoState(prev => ({
       currentWeight: Math.max(0, prev.currentWeight - weightNum),
       operations: [newOperation, ...prev.operations]
     }));
-    
+
     setLoadDate('');
     setUnloadWeight('');
     setUnloadType('all');
@@ -391,12 +391,12 @@ export const FuelCalculator = () => {
   const deleteLoadOperation = (id: string) => {
     const operation = cargoState.operations.find(op => op.id === id);
     if (!operation) return;
-    
+
     setCargoState(prev => {
-      const newWeight = operation.type === 'load' 
+      const newWeight = operation.type === 'load'
         ? prev.currentWeight - operation.weight
         : prev.currentWeight + operation.weight;
-      
+
       return {
         currentWeight: Math.max(0, newWeight),
         operations: prev.operations.filter(op => op.id !== id)
@@ -493,7 +493,7 @@ export const FuelCalculator = () => {
                 <div className="text-sm text-muted-foreground">Текущий вес груза:</div>
                 <div className="text-xl font-bold">{cargoState.currentWeight} кг</div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="loadDate">Дата</Label>
                 <Input
@@ -503,7 +503,7 @@ export const FuelCalculator = () => {
                   onChange={(e) => setLoadDate(e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="loadDescription">Описание</Label>
                 <Input
@@ -513,7 +513,7 @@ export const FuelCalculator = () => {
                   onChange={(e) => setLoadDescription(e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Загрузка</Label>
                 <div className="flex gap-2">
@@ -528,7 +528,7 @@ export const FuelCalculator = () => {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Выгрузка</Label>
                 <Select value={unloadType} onValueChange={(value: 'all' | 'partial') => setUnloadType(value)}>
@@ -550,12 +550,12 @@ export const FuelCalculator = () => {
                   />
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Действие</Label>
-                <Button 
-                  onClick={addUnloadOperation} 
-                  variant="destructive" 
+                <Button
+                  onClick={addUnloadOperation}
+                  variant="destructive"
                   size="sm"
                   disabled={cargoState.currentWeight === 0}
                   className="w-full"
@@ -564,7 +564,7 @@ export const FuelCalculator = () => {
                 </Button>
               </div>
             </div>
-            
+
             {cargoState.operations.length > 0 && (
               <div className="mt-4 space-y-2">
                 <Label>Последние операции:</Label>
@@ -663,7 +663,7 @@ export const FuelCalculator = () => {
                 </Button>
               </div>
             </div>
-            
+
             {distance && (
               <div className="mt-4 p-4 bg-muted rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -677,8 +677,8 @@ export const FuelCalculator = () => {
                   {loadType === 'empty'
                     ? `${BASE_CONSUMPTION} л/100км`
                     : loadType === 'head'
-                    ? `${HEAD_CONSUMPTION} л/100км (без прицепа)`
-                    : `${BASE_CONSUMPTION} + (${parseFloat(weight) || 0} × ${coefficient} ÷ 1000) = ${(BASE_CONSUMPTION + Math.round(((parseFloat(weight) || 0) * (parseFloat(coefficient) || 0) / 1000) * 100) / 100).toFixed(2)} л/100км`
+                      ? `${HEAD_CONSUMPTION} л/100км (без прицепа)`
+                      : `${BASE_CONSUMPTION} + (${parseFloat(weight) || 0} × ${coefficient} ÷ 1000) = ${(BASE_CONSUMPTION + Math.round(((parseFloat(weight) || 0) * (parseFloat(coefficient) || 0) / 1000) * 100) / 100).toFixed(2)} л/100км`
                   }
                 </div>
               </div>
